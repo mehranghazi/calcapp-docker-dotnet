@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalcApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="top">
+    <h1>CalcApp</h1>
+    <p class="sub">A calculator with a load and stress test bench. <span id="host">Connecting to server…</span></p>
+  </header>
+
+  <main class="layout">
+    <!-- ================= Calculator ================= -->
+    <section class="device" aria-label="Calculator">
+      <div class="lcd" aria-live="polite">
+        <div class="lcd-expr" id="expr" aria-label="Expression"></div>
+        <div class="lcd-result" id="result">0</div>
+        <div class="lcd-meta" id="calc-meta">Type or tap an expression, then press =</div>
+      </div>
+
+      <div class="keys" id="keys">
+        <button class="k fn" data-insert="sin(">sin</button>
+        <button class="k fn" data-insert="cos(">cos</button>
+        <button class="k fn" data-insert="tan(">tan</button>
+        <button class="k fn" data-insert="sqrt(">√</button>
+        <button class="k fn" data-insert="^">xʸ</button>
+
+        <button class="k fn" data-insert="ln(">ln</button>
+        <button class="k fn" data-insert="log(">log</button>
+        <button class="k fn" data-insert="pi">π</button>
+        <button class="k fn" data-insert="e">e</button>
+        <button class="k fn" data-insert="!">n!</button>
+
+        <button class="k clear" data-action="clear" aria-label="Clear">C</button>
+        <button class="k fn" data-action="back" aria-label="Delete last character">⌫</button>
+        <button class="k fn" data-insert="(">(</button>
+        <button class="k fn" data-insert=")">)</button>
+        <button class="k op" data-insert="÷" aria-label="Divide">÷</button>
+
+        <button class="k" data-insert="7">7</button>
+        <button class="k" data-insert="8">8</button>
+        <button class="k" data-insert="9">9</button>
+        <button class="k fn" data-insert="%" aria-label="Modulo">mod</button>
+        <button class="k op" data-insert="×" aria-label="Multiply">×</button>
+
+        <button class="k" data-insert="4">4</button>
+        <button class="k" data-insert="5">5</button>
+        <button class="k" data-insert="6">6</button>
+        <button class="k fn" data-insert="^2" aria-label="Square">x²</button>
+        <button class="k op" data-insert="−" aria-label="Subtract">−</button>
+
+        <button class="k" data-insert="1">1</button>
+        <button class="k" data-insert="2">2</button>
+        <button class="k" data-insert="3">3</button>
+        <button class="k fn" data-action="ans" aria-label="Previous answer">Ans</button>
+        <button class="k op" data-insert="+" aria-label="Add">+</button>
+
+        <button class="k" data-insert="0">0</button>
+        <button class="k" data-insert=".">.</button>
+        <button class="k fn" data-insert="1/(" aria-label="Reciprocal">1/x</button>
+        <button class="k eq" data-action="eval" aria-label="Equals">=</button>
+      </div>
+
+      <ol class="history" id="history" aria-label="Recent calculations"></ol>
+    </section>
+
+    <!-- ================= Test bench ================= -->
+    <div class="bench">
+
+      <section class="panel" aria-labelledby="lt-title">
+        <h2 id="lt-title">Load test</h2>
+        <p class="hint">The server sends real HTTP requests to its own API, so every call shows up in logs and monitoring tools.</p>
+
+        <form id="lt-form" class="form">
+          <label class="field wide">
+            <span>Traffic</span>
+            <select id="lt-target">
+              <option value="calc">Calculator requests (GET /api/calc)</option>
+              <option value="eval">Expression requests (POST /api/calc/eval)</option>
+              <option value="mixed">Mixed traffic (calc, eval, slow, CPU, a few errors)</option>
+              <option value="slow">Slow responses, 100–500 ms (GET /api/slow)</option>
+              <option value="cpu">CPU-heavy requests, 20–80 ms each</option>
+              <option value="error">Failing requests, HTTP 500 (GET /api/error)</option>
+            </select>
+          </label>
+
+          <fieldset class="field wide mode">
+            <legend>Stop after</legend>
+            <label><input type="radio" name="lt-mode" value="count" checked> a number of requests</label>
+            <label><input type="radio" name="lt-mode" value="time"> a length of time</label>
+          </fieldset>
+
+          <label class="field" id="lt-count-field">
+            <span>Requests</span>
+            <input id="lt-requests" type="number" min="1" max="1000000" value="2000">
+          </label>
+          <label class="field" id="lt-time-field" hidden>
+            <span>Seconds</span>
+            <input id="lt-seconds" type="number" min="1" max="600" value="60">
+          </label>
+          <label class="field">
+            <span>Parallel users</span>
+            <input id="lt-concurrency" type="number" min="1" max="500" value="20">
+          </label>
+
+          <div class="actions wide">
+            <button type="submit" class="btn primary" id="lt-start">Start load test</button>
+            <button type="button" class="btn" id="lt-stop" disabled>Stop load test</button>
+          </div>
+        </form>
+
+        <div class="progress" aria-hidden="true"><div class="bar" id="lt-bar"></div></div>
+        <p class="status" id="lt-status">No load test has run yet.</p>
+
+        <dl class="figures" id="lt-figures">
+          <div><dt>Completed</dt><dd id="lt-completed">–</dd></div>
+          <div><dt>Errors</dt><dd id="lt-errors">–</dd></div>
+          <div><dt>Requests/s</dt><dd id="lt-rps">–</dd></div>
+          <div><dt>Average</dt><dd id="lt-avg">–</dd></div>
+          <div><dt>Median</dt><dd id="lt-p50">–</dd></div>
+          <div><dt>95th pct</dt><dd id="lt-p95">–</dd></div>
+          <div><dt>99th pct</dt><dd id="lt-p99">–</dd></div>
+          <div><dt>Slowest</dt><dd id="lt-max">–</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="st-title">
+        <h2 id="st-title">Stress the server</h2>
+        <p class="hint">Runs inside the app process. Jobs stop on their own when the time is up.</p>
+
+        <div class="stress-grid">
+          <form id="cpu-form" class="form">
+            <h3>CPU</h3>
+            <label class="field"><span>Threads</span><input id="cpu-threads" type="number" min="1" value="2"></label>
+            <label class="field"><span>Seconds</span><input id="cpu-seconds" type="number" min="1" max="300" value="30"></label>
+            <div class="actions wide"><button type="submit" class="btn primary">Start CPU stress</button></div>
+          </form>
+
+          <form id="mem-form" class="form">
+            <h3>Memory</h3>
+            <label class="field"><span>Megabytes</span><input id="mem-mb" type="number" min="1" max="4096" value="256"></label>
+            <label class="field"><span>Seconds</span><input id="mem-seconds" type="number" min="1" max="300" value="30"></label>
+            <div class="actions wide"><button type="submit" class="btn primary">Start memory stress</button></div>
+          </form>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn" id="stress-stop">Stop all stress</button>
+        </div>
+        <p class="status" id="st-status">No stress job is running.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="mx-title">
+        <h2 id="mx-title">Server right now</h2>
+
+        <div class="gauges">
+          <div class="gauge">
+            <div class="gauge-head"><span>CPU</span><strong id="mx-cpu">–</strong></div>
+            <canvas id="spark-cpu" width="300" height="56" aria-label="CPU usage, last 2 minutes"></canvas>
+          </div>
+          <div class="gauge">
+            <div class="gauge-head"><span>Requests/s</span><strong id="mx-rps">–</strong></div>
+            <canvas id="spark-rps" width="300" height="56" aria-label="Requests per second, last 2 minutes"></canvas>
+          </div>
+        </div>
+
+        <dl class="figures small">
+          <div><dt>Memory used</dt><dd id="mx-ws">–</dd></div>
+          <div><dt>Managed heap</dt><dd id="mx-heap">–</dd></div>
+          <div><dt>Heap limit</dt><dd id="mx-limit">–</dd></div>
+          <div><dt>Threads</dt><dd id="mx-threads">–</dd></div>
+          <div><dt>Requests</dt><dd id="mx-total">–</dd></div>
+          <div><dt>Server errors</dt><dd id="mx-errors">–</dd></div>
+          <div><dt>In progress</dt><dd id="mx-inflight">–</dd></div>
+          <div><dt>Uptime</dt><dd id="mx-uptime">–</dd></div>
+        </dl>
+
+        <table class="endpoints">
+          <caption>Requests by endpoint since start <button type="button" class="link" id="mx-reset">Reset counters</button></caption>
+          <thead><tr><th scope="col">Endpoint</th><th scope="col">Count</th><th scope="col">Errors</th><th scope="col">Avg ms</th><th scope="col">Max ms</th></tr></thead>
+          <tbody id="mx-endpoints"><tr><td colspan="5" class="empty">No API requests yet. Use the calculator or start a load test.</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

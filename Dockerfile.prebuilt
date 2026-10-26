@@ -1,0 +1,16 @@
+# CalcApp - uses the ready-built files in ./publish (no SDK needed, only the small runtime image)
+#
+#   docker build -f Dockerfile.prebuilt -t calcapp .
+#   docker run -d --name calcapp -p 8080:8080 calcapp
+
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:8.0
+FROM ${RUNTIME_IMAGE}
+WORKDIR /app
+COPY publish/ .
+ENV ASPNETCORE_HTTP_PORTS=8080 \
+    DOTNET_gcServer=1
+EXPOSE 8080
+USER app
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["dotnet", "CalcApp.dll", "--healthcheck"]
+ENTRYPOINT ["dotnet", "CalcApp.dll"]
